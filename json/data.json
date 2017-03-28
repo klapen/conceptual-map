@@ -1,0 +1,23 @@
+[
+    {"name":"Category I",
+     "imports":["Link 1","Link 2","Link 3","Link 4","Link 5","Link 6","Link 7","Link 8","Link 9","Link 10"]
+    },
+    {"name":"Category II",
+     "imports":["Link 2","Link 4","Link 6","Link 7","Link 9","Link 10"]
+    },
+    {"name":"Category III",
+     "imports":["Link 6","Link 8","Link 9"]
+    },
+    {"name":"Category IV",
+     "imports":["Link 2","Link 5","Link 7","Link 9"]
+    },
+    {"name":"Category V",
+     "imports":["Link 1","Link 2","Link 3","Link 4"]
+    },
+    {"name":"Category VI",
+     "imports":["Link 2","Link 4","Link 6","Link 8","Link 10"]
+    },
+    {"name":"Category VII",
+     "imports":["Link 1","Link 5","Link 10"]
+    }
+]

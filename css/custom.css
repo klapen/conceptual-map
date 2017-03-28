@@ -1,0 +1,12 @@
+#chart svg rect {
+  fill: steelblue;
+  padding: 3px;
+  margin: 1px;
+  text-align: center;
+}
+#chart svg text {
+  font: 10px sans-serif;
+  text-align: right;
+  fill: white;
+  text-anchor: middle;
+}
