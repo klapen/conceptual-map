@@ -6,7 +6,12 @@
 }
 #chart svg text {
   font: 10px sans-serif;
-  text-align: right;
   fill: white;
   text-anchor: middle;
 }
+#chart .nodes g text {
+  font: 10px sans-serif;
+  fill: black;
+  text-anchor: start;
+}
+

@@ -19,20 +19,21 @@ function getTree(data,children_selector) {
     return tree;
 }
 
-function createNodes(data,radius,start_index,deg_offset) {
+function createNodes(data,radius,start_index,center,deg_offset) {
     var nodes = [],
 	numNodes = data.length,
 	offset = deg_offset*(Math.PI/180),
-        width = (radius * 2),
-        height = (radius * 2),
+        //width = radius,
+        //height = radius,
         angle,x,y,i;
 
-    var angle_step = (5*Math.PI)/(6*numNodes);
+    var angle_step = (5*Math.PI)/(6*numNodes); // 5*PI/6 is 
     
     for (i=0; i<numNodes; i++) {
-        angle = offset + (angle_step*i); // Calculate the angle at which the element will be placed.
-        y = (radius * Math.cos(angle)) + (width/2); // Calculate the x position of the element.
-        x = (radius * Math.sin(angle)) + (width/2)-6; // Calculate the y position of the element.
+        angle = offset+(angle_step*i); // Calculate the angle at which the element will be placed.
+	//angle = (angle_step*i); // Calculate the angle at which the element will be placed.
+        y = (radius*Math.cos(angle))+center.y; // Calculate the y position of the element.
+        x = (radius*Math.sin(angle))+center.x; // Calculate the x position of the element.
         nodes.push({'id': start_index+i,'name':data[i],'x': x,'y': y});
     }
     return nodes;
@@ -43,8 +44,8 @@ function translate(x,y){
 }
 var dim = {
     height: 400,
-    width: 400,
-    margin: {top:20,bottom:20,left:20,right:20},
+    width: 600,
+    margin: {top:20,bottom:20,left:100,right:100},
     barHeight: 20,
     barWidth: 100
 };
@@ -59,6 +60,8 @@ document.addEventListener('DOMContentLoaded', function(){
 	var svg = d3.select('#chart').append('svg')
 	    .attr('width',dim.width)
 	    .attr('height',dim.height);
+	var svgWidth = dim.barWidth-(dim.margin.left+dim.margin.right);
+	var svgHeight = dim.barHeight-(dim.margin.top+dim.margin.bottom);
 	
 	// Create center bars from First
 	var barChartHeight = dim.barHeight*nodes.first.length;
@@ -74,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 	var first_rect = bar.append('rect')
 	    .attr('width', dim.barWidth)
-	    .attr('height', dim.barHeight -1)
+	    .attr('height', dim.barHeight-1)
 	    .attr('id',function(d,i){return 'first-'+i});
 
 	var first_text = bar.append('text')
@@ -91,18 +94,30 @@ document.addEventListener('DOMContentLoaded', function(){
 	var snd_left = nodes.second.slice(0,snd_half);
 	
 	// Create dots for each Seconds
-	var snd_nodes_right = createNodes(snd_right,dim.width/2,snd_half,30);
-	blah = snd_nodes_right;
-	console.log(blah);
-
+	var snd_nodes_right = createNodes(snd_right,
+					  (dim.width-dim.barWidth-dim.margin.right)/2,
+					  snd_half,
+					  {x:((dim.width+dim.barWidth)/2)-6,y:dim.height/2},
+					  30);
+	var rNodes = 5;
 	var snd_elem_right = svg.append('g')
-	    .selectAll('circle')
-            .data(snd_nodes_right)
-            .enter().append('svg:circle')
-            .attr('r', 5)
+	    .classed('nodes',true)
+	    .selectAll('g')
+	    .data(snd_nodes_right)
+	    .enter().append('g');
+	
+	snd_elem_right.append('svg:circle')
+            .attr('r', rNodes)
             .attr('cx',function(d,i){return d.x})
             .attr('cy',function(d,i){return d.y});
 
+	snd_elem_right.append('svg:text')
+	    .attr('x',function(d,i){return d.x+rNodes}) // Separate from center
+	    .attr('y',function(d,i){return d.y})
+	    .attr('dy', '.35em')
+	    .attr('text-anchor', 'middle')
+	    .text(function(d,i){return d.name;})
+	
 	// Make lines from bars to dots
 
 	// Make highlight on mouseover
