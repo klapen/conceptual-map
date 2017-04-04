@@ -6,10 +6,10 @@ function getTree(data,children_selector) {
     // Map data to structure
     data.forEach(function(d) {
 	var parentId = tree.first.indexOf(d.name);
-	if(parentId < 0) parentId = tree.first.push(d.name);
+	if(parentId < 0) parentId = tree.first.push(d.name)-1;
 	d[children_selector].forEach(function(c){
 	    var childId = tree.second.indexOf(c);
-	    if(childId < 0) childId = tree.second.push(c);
+	    if(childId < 0) childId = tree.second.push(c)-1;
 	    tree.links.push({source:parentId, target:childId});
 	})
     });
@@ -23,15 +23,12 @@ function createNodes(data,radius,start_index,center,deg_offset) {
     var nodes = [],
 	numNodes = data.length,
 	offset = deg_offset*(Math.PI/180),
-        //width = radius,
-        //height = radius,
         angle,x,y,i;
 
-    var angle_step = (5*Math.PI)/(6*numNodes); // 5*PI/6 is 
+    var angle_step = (Math.PI-(2*offset))/(numNodes-1); // remove one to make it simetrical
     
     for (i=0; i<numNodes; i++) {
         angle = offset+(angle_step*i); // Calculate the angle at which the element will be placed.
-	//angle = (angle_step*i); // Calculate the angle at which the element will be placed.
         y = (radius*Math.cos(angle))+center.y; // Calculate the y position of the element.
         x = (radius*Math.sin(angle))+center.x; // Calculate the x position of the element.
         nodes.push({'id': start_index+i,'name':data[i],'x': x,'y': y});
@@ -54,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function(){
     d3.json('json/data.json',function(error,data){
 	console.log(data);
 	var nodes = getTree(data,'imports');
-	oas = nodes;
 	
 	// Create graph container
 	var svg = d3.select('#chart').append('svg')
@@ -78,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function(){
 	var first_rect = bar.append('rect')
 	    .attr('width', dim.barWidth)
 	    .attr('height', dim.barHeight-1)
-	    .attr('id',function(d,i){return 'first-'+i});
+	    .attr('id',function(d,i){return 'fst-'+i});
 
 	var first_text = bar.append('text')
 	    .attr('x', dim.barWidth/2)
@@ -98,18 +94,20 @@ document.addEventListener('DOMContentLoaded', function(){
 					  (dim.width-dim.barWidth-dim.margin.right)/2,
 					  snd_half,
 					  {x:((dim.width+dim.barWidth)/2)-6,y:dim.height/2},
-					  30);
+					  50);
 	var rNodes = 5;
+	oas = snd_nodes_right;
 	var snd_elem_right = svg.append('g')
 	    .classed('nodes',true)
 	    .selectAll('g')
 	    .data(snd_nodes_right)
 	    .enter().append('g');
 	
-	snd_elem_right.append('svg:circle')
+	var snd_circles_right = snd_elem_right.append('svg:circle')
             .attr('r', rNodes)
-            .attr('cx',function(d,i){return d.x})
-            .attr('cy',function(d,i){return d.y});
+            .attr('cx',function(d){return d.x})
+            .attr('cy',function(d){return d.y})
+	    .attr('id',function(d){return 'snd-'+d.id});;
 
 	snd_elem_right.append('svg:text')
 	    .attr('x',function(d,i){return d.x+rNodes}) // Separate from center
@@ -117,9 +115,40 @@ document.addEventListener('DOMContentLoaded', function(){
 	    .attr('dy', '.35em')
 	    .attr('text-anchor', 'middle')
 	    .text(function(d,i){return d.name;})
-	
-	// Make lines from bars to dots
 
+	//oas=nodes.links;
+	blah = [];
+	var lineFunction = d3.line()
+	    .y(function(d) { return d.y; })
+	    .x(function(d) { return d.x; })
+	    .curve(d3.curveBundle.beta(0.65));
+	
+	nodes.links.forEach(function(d,i){
+	    var src = document.getElementById('fst-'+d.source).getBoundingClientRect();
+	    var tar = d3.select('#snd-'+d.target);
+
+	    if (!tar.empty()){
+		var lineGraph = svg.append("path")
+		    .attr("d",lineFunction([{"x":src.right,"y":src.y},
+					    {'x':src.right+50,'y':src.y},
+					    {'x':tar.attr('cx')-70,'y':tar.attr('cy')},
+					    {'x':tar.attr('cx'),'y':tar.attr('cy')}]))
+		    .attr("stroke", "lightgreen")
+		    .attr("stroke-width", 2)
+		    .attr("fill", "none");
+		blah.push(lineGraph);
+	    }
+	});
+	// Make lines from bars to dots
+	
+	//This is the accessor function we talked about above
+	var lineFunction = d3.line()
+	    .y(function(d) { return d.y; })
+	    .x(function(d) { return d.x; })
+	    .curve(d3.curveBundle.beta(1));
+
+	
+	
 	// Make highlight on mouseover
     })
 }, false);
