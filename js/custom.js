@@ -50,7 +50,6 @@ var dim = {
 var oas,blah;
 document.addEventListener('DOMContentLoaded', function(){ 
     d3.json('json/data.json',function(error,data){
-	console.log(data);
 	var nodes = getTree(data,'imports');
 	
 	// Create graph container
@@ -75,7 +74,8 @@ document.addEventListener('DOMContentLoaded', function(){
 	var first_rect = bar.append('rect')
 	    .attr('width', dim.barWidth)
 	    .attr('height', dim.barHeight-1)
-	    .attr('id',function(d,i){return 'fst-'+i});
+	    .attr('id',function(d,i){return 'fst-'+i})
+	    .attr('class',function(d,i){return 'src-'+i});
 
 	var first_text = bar.append('text')
 	    .attr('x', dim.barWidth/2)
@@ -91,22 +91,21 @@ document.addEventListener('DOMContentLoaded', function(){
 	
 	// Create dots for each Seconds
 	var drawRadius = (dim.width-dim.barWidth-dim.margin.right)/2;
-	console.log(drawRadius);
-	var snd_nodes_right = createNodes(snd_right, drawRadius,
-					  snd_half,
+	var snd_nodes_right = createNodes(snd_right, drawRadius,snd_half,
 					  {x:((dim.width+dim.barWidth)/2)-6,y:dim.height/2},
 					  50,true);
 	var snd_nodes_left = createNodes(snd_left, drawRadius,0,
 					 {x:((dim.width-dim.barWidth)/2)-6,y:dim.height/2},
 					 50,false);
 	var rNodes = 5;
-	oas = snd_nodes_left;
+	oas = nodes;
 	
 	var lineFunction = d3.line()
 	    .y(function(d) { return d.y; })
 	    .x(function(d) { return d.x; })
 	    .curve(d3.curveBundle.beta(0.65));
-
+	
+	// Make lines from bars to dots
 	drawNodes(snd_nodes_left.concat(snd_nodes_right),nodes.links);
 	function drawNodes(nodes,links){
 	    var snd_elem = svg.append('g')
@@ -119,7 +118,8 @@ document.addEventListener('DOMContentLoaded', function(){
 		.attr('r', rNodes)
 		.attr('cx',function(d){return d.x})
 		.attr('cy',function(d){return d.y})
-		.attr('id',function(d){return 'snd-'+d.id});;
+		.attr('id',function(d){return 'snd-'+d.id})
+		.attr('class',function(d){return 'tar-'+d.id});
 
 	    snd_elem.append('svg:text')
 		.attr('x',function(d,i){return d.x+(d.isRight ? rNodes : -rNodes)}) // Separate from center
@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function(){
 		.attr('dy', '.35em')
 		.style('text-anchor',function(d){return (d.isRight ? 'start' : 'end')})
 		.text(function(d,i){return d.name;})
+		.attr('class',function(d){return 'tar-'+d.id});
 	    
 	    blah = [];
 	    
@@ -147,12 +148,13 @@ document.addEventListener('DOMContentLoaded', function(){
 						{'x':tar.attr('cx'),'y':tar.attr('cy')}]))
 			.attr("stroke", "lightgreen")
 			.attr("stroke-width", 2)
-			.attr("fill", "none");
+			.attr("fill", "none")
+			.classed('src-'+d.source,true)
+			.classed('tar-'+d.target,true);
 		    blah.push(lineGraph);
 		}
 	    });
 	}
-	// Make lines from bars to dots
 	
 	// Make highlight on mouseover
     })
