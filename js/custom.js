@@ -19,19 +19,20 @@ function getTree(data,children_selector) {
     return tree;
 }
 
-function createNodes(data,radius,start_index,center,deg_offset) {
+function createNodes(data,radius,start_index,center,deg_offset,isRight) {
     var nodes = [],
-	numNodes = data.length,
+	numNodes = data.length-1, // Due to the first node is on 0 angle, the number of nodes is minus 1
 	offset = deg_offset*(Math.PI/180),
         angle,x,y,i;
 
-    var angle_step = (Math.PI-(2*offset))/(numNodes-1); // remove one to make it simetrical
+    var angle_step = (Math.PI-(2*offset))/numNodes; // remove one to make it simetrical
     
-    for (i=0; i<numNodes; i++) {
-        angle = offset+(angle_step*i); // Calculate the angle at which the element will be placed.
+    for (i=0; i<data.length; i++) {
+	// Calculate the angle at which the element will be placed.
+        angle = isRight ? (offset+(angle_step*(numNodes-i))):(offset+Math.PI+(angle_step*i));
         y = (radius*Math.cos(angle))+center.y; // Calculate the y position of the element.
         x = (radius*Math.sin(angle))+center.x; // Calculate the x position of the element.
-        nodes.push({'id': start_index+i,'name':data[i],'x': x,'y': y});
+        nodes.push({'id': start_index+i,'name':data[i],'x': x,'y': y,'isRight':isRight});
     }
     return nodes;
 }
@@ -80,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function(){
 	    .attr('x', dim.barWidth/2)
 	    .attr('y', dim.barHeight / 2)
 	    .attr('dy', '.35em')
-	    .attr('text-anchor', 'middle')
 	    .text(function(d,i){return d;});
 
 	// Divide Seconds into 2 groups
@@ -90,64 +90,69 @@ document.addEventListener('DOMContentLoaded', function(){
 	var snd_left = nodes.second.slice(0,snd_half);
 	
 	// Create dots for each Seconds
-	var snd_nodes_right = createNodes(snd_right,
-					  (dim.width-dim.barWidth-dim.margin.right)/2,
+	var drawRadius = (dim.width-dim.barWidth-dim.margin.right)/2;
+	console.log(drawRadius);
+	var snd_nodes_right = createNodes(snd_right, drawRadius,
 					  snd_half,
 					  {x:((dim.width+dim.barWidth)/2)-6,y:dim.height/2},
-					  50);
+					  50,true);
+	var snd_nodes_left = createNodes(snd_left, drawRadius,0,
+					 {x:((dim.width-dim.barWidth)/2)-6,y:dim.height/2},
+					 50,false);
 	var rNodes = 5;
-	oas = snd_nodes_right;
-	var snd_elem_right = svg.append('g')
-	    .classed('nodes',true)
-	    .selectAll('g')
-	    .data(snd_nodes_right)
-	    .enter().append('g');
+	oas = snd_nodes_left;
 	
-	var snd_circles_right = snd_elem_right.append('svg:circle')
-            .attr('r', rNodes)
-            .attr('cx',function(d){return d.x})
-            .attr('cy',function(d){return d.y})
-	    .attr('id',function(d){return 'snd-'+d.id});;
-
-	snd_elem_right.append('svg:text')
-	    .attr('x',function(d,i){return d.x+rNodes}) // Separate from center
-	    .attr('y',function(d,i){return d.y})
-	    .attr('dy', '.35em')
-	    .attr('text-anchor', 'middle')
-	    .text(function(d,i){return d.name;})
-
-	//oas=nodes.links;
-	blah = [];
 	var lineFunction = d3.line()
 	    .y(function(d) { return d.y; })
 	    .x(function(d) { return d.x; })
 	    .curve(d3.curveBundle.beta(0.65));
-	
-	nodes.links.forEach(function(d,i){
-	    var src = document.getElementById('fst-'+d.source).getBoundingClientRect();
-	    var tar = d3.select('#snd-'+d.target);
 
-	    if (!tar.empty()){
-		var lineGraph = svg.append("path")
-		    .attr("d",lineFunction([{"x":src.right,"y":src.y},
-					    {'x':src.right+50,'y':src.y},
-					    {'x':tar.attr('cx')-70,'y':tar.attr('cy')},
-					    {'x':tar.attr('cx'),'y':tar.attr('cy')}]))
-		    .attr("stroke", "lightgreen")
-		    .attr("stroke-width", 2)
-		    .attr("fill", "none");
-		blah.push(lineGraph);
-	    }
-	});
+	drawNodes(snd_nodes_left.concat(snd_nodes_right),nodes.links);
+	function drawNodes(nodes,links){
+	    var snd_elem = svg.append('g')
+		.classed('nodes',true)
+		.selectAll('g')
+		.data(nodes)
+		.enter().append('g');
+	    
+	    var snd_circles = snd_elem.append('svg:circle')
+		.attr('r', rNodes)
+		.attr('cx',function(d){return d.x})
+		.attr('cy',function(d){return d.y})
+		.attr('id',function(d){return 'snd-'+d.id});;
+
+	    snd_elem.append('svg:text')
+		.attr('x',function(d,i){return d.x+(d.isRight ? rNodes : -rNodes)}) // Separate from center
+		.attr('y',function(d,i){return d.y})
+		.attr('dy', '.35em')
+		.style('text-anchor',function(d){return (d.isRight ? 'start' : 'end')})
+		.text(function(d,i){return d.name;})
+	    
+	    blah = [];
+	    
+	    links.forEach(function(d,i){
+		var src = document.getElementById('fst-'+d.source).getBoundingClientRect();
+		var tar = d3.select('#snd-'+d.target);
+
+		if (!tar.empty()){
+		    var xCenter = tar.datum().isRight ? src.right : src.left;
+		    xcenter = parseFloat(xCenter)-8;
+		    var xFstPnt = xCenter+(tar.datum().isRight ? 50 : -50);
+		    var xSndPnt = parseFloat(tar.attr('cx'))+(tar.datum().isRight ? -70 :30);
+
+		    var lineGraph = svg.append("path")
+			.attr("d",lineFunction([{'x':(parseFloat(xCenter)-8),'y':src.y},
+						{'x':xFstPnt,'y':src.y},
+						{'x':xSndPnt,'y':tar.attr('cy')},
+						{'x':tar.attr('cx'),'y':tar.attr('cy')}]))
+			.attr("stroke", "lightgreen")
+			.attr("stroke-width", 2)
+			.attr("fill", "none");
+		    blah.push(lineGraph);
+		}
+	    });
+	}
 	// Make lines from bars to dots
-	
-	//This is the accessor function we talked about above
-	var lineFunction = d3.line()
-	    .y(function(d) { return d.y; })
-	    .x(function(d) { return d.x; })
-	    .curve(d3.curveBundle.beta(1));
-
-	
 	
 	// Make highlight on mouseover
     })
